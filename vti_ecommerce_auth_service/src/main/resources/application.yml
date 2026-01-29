@@ -1,0 +1,17 @@
+
+server:
+  port: 8386
+
+spring:
+  application:
+    name: auth-service
+
+keycloak:
+  auth-server-url: http://localhost:8181
+  realm: ecommerce-project
+  resource: backend
+  credentials:
+    secret: 'kk4iyY7jcYexwxf3YddNZYGhHrMm8WM2'
+
+
+

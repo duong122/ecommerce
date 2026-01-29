@@ -1,0 +1,3 @@
+mua hàng 
+product - cart - order - inventory(reserve stock) - promotion - payment - delivery
+
