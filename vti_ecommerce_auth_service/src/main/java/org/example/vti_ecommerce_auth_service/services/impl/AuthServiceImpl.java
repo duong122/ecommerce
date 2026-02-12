@@ -1,0 +1,80 @@
+package org.example.vti_ecommerce_auth_service.services.impl;
+
+import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
+import org.example.vti_ecommerce_auth_service.dtos.requests.RegisterRequest;
+import org.example.vti_ecommerce_auth_service.dtos.requests.TokenRequest;
+import org.example.vti_ecommerce_auth_service.dtos.responses.RegisterResponse;
+import org.example.vti_ecommerce_auth_service.dtos.responses.TokenResponse;
+import org.example.vti_ecommerce_auth_service.exceptions.AppException;
+import org.example.vti_ecommerce_auth_service.exceptions.ErrorCode;
+import org.example.vti_ecommerce_auth_service.services.AuthService;
+import org.keycloak.admin.client.CreatedResponseUtil;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.Collections;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class AuthServiceImpl implements AuthService {
+
+    private final Keycloak keycloak;
+    private final WebClient webClient;
+
+    @Value("${keycloak.realm}")
+    private String realm;
+
+    @Override
+    public RegisterResponse register(RegisterRequest request) {
+        // B1: Verify if user exited or not
+        List<UserRepresentation> existingUser = keycloak.realm(realm)
+                .users().search(request.getUsername());
+
+        if (!existingUser.isEmpty()) {
+            throw new AppException(ErrorCode.USER_ALREADY_EXISTS);
+        }
+
+        // B2: Set password credentials
+        CredentialRepresentation credentialRepresentation = new CredentialRepresentation();
+        credentialRepresentation.setType(CredentialRepresentation.PASSWORD);
+        credentialRepresentation.setTemporary(false);
+        credentialRepresentation.setValue(request.getPassword());
+
+        // B3: Build user representation send to keycloak
+        UserRepresentation user = new UserRepresentation();
+        user.setEnabled(true);
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setFirstName(request.getFistName());
+        user.setLastName(request.getLastName());
+        user.setCredentials(Collections.singletonList(credentialRepresentation));
+
+        // B4: Call Keycloak admin API to create user
+        Response response = keycloak.realm(realm).users().create(user);
+
+        // B5: Handle response frorm keyCloak
+        if (response.getStatus() == 409) {
+            throw new AppException(ErrorCode.REGISTER_FAILED);
+        }
+
+        // B6: Get userId from location header that keycloak responsed
+        String userId = CreatedResponseUtil.getCreatedId(response);
+
+        return RegisterResponse.builder()
+                .userId(userId)
+                .email(request.getEmail())
+                .username(request.getUsername())
+                .build();
+    }
+
+    @Override
+    public TokenResponse login(TokenRequest request) {
+        return null;
+    }
+}
