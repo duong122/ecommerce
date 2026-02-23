@@ -2,6 +2,9 @@ package org.example.vti_ecommerce_auth_service.services.impl;
 
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
+
+import org.example.vti_ecommerce_auth_service.dtos.requests.RefreshTokenRequest;
 import org.example.vti_ecommerce_auth_service.dtos.requests.RegisterRequest;
 import org.example.vti_ecommerce_auth_service.dtos.requests.TokenRequest;
 import org.example.vti_ecommerce_auth_service.dtos.responses.RegisterResponse;
@@ -14,7 +17,9 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.Collections;
@@ -27,8 +32,17 @@ public class AuthServiceImpl implements AuthService {
     private final Keycloak keycloak;
     private final WebClient webClient;
 
+    @Value("${keycloak.server-url}")
+    private String authServerUrl;
+
     @Value("${keycloak.realm}")
     private String realm;
+
+    @Value("${keycloak.client-id}")
+    private String clientId;
+
+    @Value("${keycloak.credentials.secret}")
+    private String clientSecret;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -75,6 +89,32 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public TokenResponse login(TokenRequest request) {
-        return null;
+        String tokenUrl = authServerUrl + "/realms/" + realm + "/protocol/openid-connect/token";
+
+        return webClient.post()
+                    .uri(tokenUrl)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(BodyInserters.fromFormData("grant_type", "password")
+                            .with("client_id", clientId)
+                            .with("client_secret", clientSecret)
+                            .with("username", request.getUsername())
+                            .with("password", request.getPassword()))
+                    .retrieve()
+                    .onStatus(
+                        status -> status.value() == 401,
+                        clientResponse -> Mono.error(new AppException(ErrorCode.INVALID_CREDENTIAL))  
+                    )
+                    .bodyToMono(TokenResponse.class)
+                    .block();
+        
     }
+
+    @Override
+    public TokenResponse refreshToken(RefreshTokenRequest request) {
+        String tokenUrl = authServerUrl + "/realms/" + realm + "/protocol/openid-connect/token";
+        
+    }
+
+   
+ 
 }

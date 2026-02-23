@@ -2,6 +2,8 @@ package org.example.vti_ecommerce_auth_service.controllers;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.example.vti_ecommerce_auth_service.dtos.requests.RefreshTokenRequest;
 import org.example.vti_ecommerce_auth_service.dtos.requests.RegisterRequest;
 import org.example.vti_ecommerce_auth_service.dtos.requests.TokenRequest;
 import org.example.vti_ecommerce_auth_service.dtos.responses.BaseResponse;
@@ -14,6 +16,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import ch.qos.logback.core.subst.Token;
 
 import java.time.LocalDateTime;
 
@@ -57,8 +61,25 @@ public class AuthController {
         );
     }
     // Get access token from refresh token
-
+    ResponseEntity<BaseResponse<TokenResponse>> refreshToken(
+            @Valid @RequestBody RefreshTokenRequest request
+    ) {
+        return ResponseEntity.ok(
+                BaseResponse.<TokenResponse>builder()
+                        .success(true)
+                        .message("Get access token again successfully")
+                        .data(authService.refreshToken())
+                        .timestamp(LocalDateTime.now())
+                        .fieldErrors(null)
+                        .build()
+        );
+    }
 
     // Reset password
-
+    
+    
 }
+
+
+
+
