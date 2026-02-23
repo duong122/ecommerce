@@ -111,10 +111,26 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public TokenResponse refreshToken(RefreshTokenRequest request) {
+
         String tokenUrl = authServerUrl + "/realms/" + realm + "/protocol/openid-connect/token";
-        
+
+        return webClient.post()
+                .uri(tokenUrl)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromFormData("grant_type", "refresh_token")
+                        .with("client_id", clientId)
+                        .with("client_secret", clientSecret)
+                        .with("refresh_token", request.getRefreshToken()))
+                .retrieve()
+                .onStatus(status -> status.value() == 400, 
+                            clientResponse -> Mono.error(new AppException(ErrorCode.INVALID_REFRESH_TOKEN)))  
+                .onStatus(
+                    status -> status.value() == 401,
+                    clientResponse -> Mono.error(new AppException(ErrorCode.UNAUTHORIZED))
+                ) 
+                .bodyToMono(TokenResponse.class)
+                .block();
+
     }
 
-   
- 
 }

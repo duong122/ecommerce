@@ -8,7 +8,9 @@ import lombok.Getter;
 public enum ErrorCode {
     USER_ALREADY_EXISTS(409, "User already existed"),
     REGISTER_FAILED(500, "Register failed, please try again"),
-    INVALID_CREDENTIAL(401, "Invalid username or password");
+    INVALID_CREDENTIAL(401, "Invalid username or password"),
+    INVALID_REFRESH_TOKEN(400, "Invalid refresh token"),
+    UNAUTHORIZED(401, "Invalid credentials");
 
     private final int httpStatus;
     private final String message;

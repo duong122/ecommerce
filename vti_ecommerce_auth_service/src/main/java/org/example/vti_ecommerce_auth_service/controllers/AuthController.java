@@ -60,7 +60,10 @@ public class AuthController {
                         .build()
         );
     }
+
+
     // Get access token from refresh token
+    @PostMapping("/refresh")
     ResponseEntity<BaseResponse<TokenResponse>> refreshToken(
             @Valid @RequestBody RefreshTokenRequest request
     ) {
@@ -68,7 +71,7 @@ public class AuthController {
                 BaseResponse.<TokenResponse>builder()
                         .success(true)
                         .message("Get access token again successfully")
-                        .data(authService.refreshToken())
+                        .data(authService.refreshToken(request))
                         .timestamp(LocalDateTime.now())
                         .fieldErrors(null)
                         .build()
