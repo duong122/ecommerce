@@ -10,7 +10,9 @@ public enum ErrorCode {
     REGISTER_FAILED(500, "Register failed, please try again"),
     INVALID_CREDENTIAL(401, "Invalid username or password"),
     INVALID_REFRESH_TOKEN(400, "Invalid refresh token"),
-    UNAUTHORIZED(401, "Invalid credentials");
+    UNAUTHORIZED(401, "Invalid credentials"),
+    INVALID_OLD_PASSWORD(400, "Old password is incorect"),
+    USER_NOT_FOUND(404, "User not found");
 
     private final int httpStatus;
     private final String message;

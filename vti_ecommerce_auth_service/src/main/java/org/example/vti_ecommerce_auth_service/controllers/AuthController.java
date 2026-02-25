@@ -5,9 +5,11 @@ import lombok.RequiredArgsConstructor;
 
 import org.example.vti_ecommerce_auth_service.dtos.requests.RefreshTokenRequest;
 import org.example.vti_ecommerce_auth_service.dtos.requests.RegisterRequest;
+import org.example.vti_ecommerce_auth_service.dtos.requests.ResetPasswordRequest;
 import org.example.vti_ecommerce_auth_service.dtos.requests.TokenRequest;
 import org.example.vti_ecommerce_auth_service.dtos.responses.BaseResponse;
 import org.example.vti_ecommerce_auth_service.dtos.responses.RegisterResponse;
+import org.example.vti_ecommerce_auth_service.dtos.responses.ResetpasswordResponse;
 import org.example.vti_ecommerce_auth_service.dtos.responses.TokenResponse;
 import org.example.vti_ecommerce_auth_service.services.AuthService;
 import org.springframework.http.ResponseEntity;
@@ -61,7 +63,6 @@ public class AuthController {
         );
     }
 
-
     // Get access token from refresh token
     @PostMapping("/refresh")
     ResponseEntity<BaseResponse<TokenResponse>> refreshToken(
@@ -79,7 +80,20 @@ public class AuthController {
     }
 
     // Reset password
-    
+    @PostMapping("/reset-password")
+    ResponseEntity<BaseResponse<ResetpasswordResponse>> resetPassword(
+        @Valid @RequestBody ResetPasswordRequest request
+    ) {
+        return ResponseEntity.ok(
+                BaseResponse.<ResetpasswordResponse>builder()
+                                .success(true)
+                                .message("Reset passwrod for user " + request.getUsername() + " successfully")
+                                .data(authService.resetPassword(request))
+                                .timestamp(LocalDateTime.now())
+                                .fieldErrors(null)
+                                .build()
+        );
+    }
     
 }
 

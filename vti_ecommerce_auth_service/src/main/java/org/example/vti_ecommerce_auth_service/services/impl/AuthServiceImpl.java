@@ -4,10 +4,13 @@ import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import org.apache.catalina.User;
 import org.example.vti_ecommerce_auth_service.dtos.requests.RefreshTokenRequest;
 import org.example.vti_ecommerce_auth_service.dtos.requests.RegisterRequest;
+import org.example.vti_ecommerce_auth_service.dtos.requests.ResetPasswordRequest;
 import org.example.vti_ecommerce_auth_service.dtos.requests.TokenRequest;
 import org.example.vti_ecommerce_auth_service.dtos.responses.RegisterResponse;
+import org.example.vti_ecommerce_auth_service.dtos.responses.ResetpasswordResponse;
 import org.example.vti_ecommerce_auth_service.dtos.responses.TokenResponse;
 import org.example.vti_ecommerce_auth_service.exceptions.AppException;
 import org.example.vti_ecommerce_auth_service.exceptions.ErrorCode;
@@ -46,7 +49,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
-        // B1: Verify if user exited or not
+        // S1: Verify if user exited or not
         List<UserRepresentation> existingUser = keycloak.realm(realm)
                 .users().search(request.getUsername());
 
@@ -54,13 +57,13 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.USER_ALREADY_EXISTS);
         }
 
-        // B2: Set password credentials
+        // S2: Set password credentials
         CredentialRepresentation credentialRepresentation = new CredentialRepresentation();
         credentialRepresentation.setType(CredentialRepresentation.PASSWORD);
         credentialRepresentation.setTemporary(false);
         credentialRepresentation.setValue(request.getPassword());
 
-        // B3: Build user representation send to keycloak
+        // S3: Build user representation send to keycloak
         UserRepresentation user = new UserRepresentation();
         user.setEnabled(true);
         user.setUsername(request.getUsername());
@@ -69,15 +72,15 @@ public class AuthServiceImpl implements AuthService {
         user.setLastName(request.getLastName());
         user.setCredentials(Collections.singletonList(credentialRepresentation));
 
-        // B4: Call Keycloak admin API to create user
+        // S4: Call Keycloak admin API to create user
         Response response = keycloak.realm(realm).users().create(user);
 
-        // B5: Handle response frorm keyCloak
+        // S5: Handle response frorm keyCloak
         if (response.getStatus() == 409) {
             throw new AppException(ErrorCode.REGISTER_FAILED);
         }
 
-        // B6: Get userId from location header that keycloak responsed
+        // S6: Get userId from location header that keycloak responsed
         String userId = CreatedResponseUtil.getCreatedId(response);
 
         return RegisterResponse.builder()
@@ -130,6 +133,48 @@ public class AuthServiceImpl implements AuthService {
                 ) 
                 .bodyToMono(TokenResponse.class)
                 .block();
+
+    }
+
+    @Override
+    public ResetpasswordResponse resetPassword(ResetPasswordRequest request) {
+        
+        // S1: Try to login to see if the old password correct or not
+        try {
+            TokenRequest tokenRequest = new TokenRequest();
+            tokenRequest.setUsername(request.getUsername());
+            tokenRequest.setPassword(request.getOldPassword());
+            login(tokenRequest);
+        } catch (AppException e) {
+            if (e.getErrorCode() ==  ErrorCode.INVALID_CREDENTIAL) {
+                throw new AppException(ErrorCode.INVALID_OLD_PASSWORD);
+            }
+            throw(e);
+        }
+
+        // S2: Searching for user in keycloak by username
+        List<UserRepresentation> users = keycloak.realm(realm).users().search(request.getUsername());
+        if (users.isEmpty()) {
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        // S3: Get the user
+        UserRepresentation user = users.getFirst();
+        String userId = user.getId();
+
+        // S4: Create new credential and new password
+        CredentialRepresentation newCredendial = new CredentialRepresentation();
+        newCredendial.setType(CredentialRepresentation.PASSWORD);
+        newCredendial.setTemporary(false);
+        newCredendial.setValue(request.getNewPassword());
+
+        // S5: Call keycloak API admin to change password
+        keycloak.realm(realm).users().get(userId).resetPassword(newCredendial);
+
+        return ResetpasswordResponse.builder()
+                    .message("Reset password successfully")
+                    .username(request.getUsername())
+                    .build();
 
     }
 
