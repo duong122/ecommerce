@@ -22,6 +22,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -109,7 +110,6 @@ public class AuthServiceImpl implements AuthService {
                     )
                     .bodyToMono(TokenResponse.class)
                     .block();
-        
     }
 
     @Override
