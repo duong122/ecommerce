@@ -24,7 +24,18 @@ public class Category extends BaseEntity {
     @NotEmpty
     @Column(name = "slug", nullable = false, unique = true)
     private String slug;
+
+    private String description;
     
     @Column(name = "parent_id")
     private String parentId;
+
+    @Column(name = "img_url")
+    private String imgUrl;
+
+    @Column(name = "sort_order")
+    private Integer sortOrder;
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive;
 }

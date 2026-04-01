@@ -1,0 +1,10 @@
+Roadmap Implementation Checklist
+Week 1-2 (Phase 1): Infrastructure setup + Product + Inventory services
+Week 3-4 (Phase 1): Cart + Order services + Kafka integration
+Week 5-6 (Phase 1): Payment + Shipment + end-to-end testing
+Week 7-8 (Phase 1): Bug fixing + demo preparation
+Week 9-10 (Phase 2): Admin tools + Cancel/Refund flows
+Week 11-12 (Phase 2): Monitoring + Logging + Error handling
+Week 13-14 (Phase 2): Load testing + Performance tuning
+Week 15-16 (Phase 3): Search service + Analytics service
+Week 17-18 (Phase 3): UX features (reviews, wishlist, recommendations)

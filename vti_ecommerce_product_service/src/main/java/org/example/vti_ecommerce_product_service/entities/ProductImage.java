@@ -29,6 +29,13 @@ public class ProductImage extends BaseEntity {
     @Column(nullable = false)
     private String url;
 
+    @Column(name = "alt_text")
+    private String altText;
+
     @Column(name = "sort_order")
     private Integer sortOrder = 0;
+
+    @Column(name = "is_primary")
+    private Boolean isPrimary;
+
 }

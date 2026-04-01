@@ -34,4 +34,7 @@ public class ProductVariant extends BaseEntity {
     private String size;
 
     private Double weight;
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive;
 }

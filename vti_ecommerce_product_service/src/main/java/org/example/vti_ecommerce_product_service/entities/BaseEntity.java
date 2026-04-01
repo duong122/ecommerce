@@ -11,6 +11,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import lombok.Getter;
@@ -22,6 +23,7 @@ import lombok.Setter;
 @MappedSuperclass
 public class BaseEntity {
 
+    @Id
     @Column(name = "id", length = 36, nullable = false, updatable = false)
     private String id;
 
@@ -43,7 +45,6 @@ public class BaseEntity {
     @LastModifiedBy
     @Column(name = "last_modified_by")
     private String lastModifiedBy;
-
 
     @PrePersist
     protected void onCreate() {
