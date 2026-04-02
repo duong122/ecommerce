@@ -49,8 +49,6 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public PagedResponse<ProductSummaryResponse> getProducts(ProductFilterRequest request) {
 
-        log.info(request.toString());
-
         normalizeRequest(request);
 
         String cacheKey = buildCacheKey(request);
