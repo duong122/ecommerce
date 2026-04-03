@@ -48,4 +48,17 @@ public class GlobalExceptionHandler {
                 .build()
         );
     }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<BaseResponse<Void>> handleResourceNotFound(ResourceNotFoundException ex) {
+        return ResponseEntity.badRequest().body(
+            BaseResponse.<Void>builder()
+                .success(false)
+                .message(ex.getMessage())
+                .data(null)
+                .fieldErros(null)
+                .timeStamp(LocalDateTime.now())
+                .build()   
+        );
+    }
 }

@@ -5,12 +5,14 @@ import java.time.LocalDateTime;
 import org.example.vti_ecommerce_product_service.dtos.requests.ProductFilterRequest;
 import org.example.vti_ecommerce_product_service.dtos.responses.BaseResponse;
 import org.example.vti_ecommerce_product_service.dtos.responses.PagedResponse;
+import org.example.vti_ecommerce_product_service.dtos.responses.ProductDetailResponse;
 import org.example.vti_ecommerce_product_service.dtos.responses.ProductSummaryResponse;
 import org.example.vti_ecommerce_product_service.services.ProductService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,6 +46,19 @@ public class ProductController {
         );
     }
 
-
+    @GetMapping("/{id}")
+    ResponseEntity<BaseResponse<ProductDetailResponse>> getProductById(
+        @PathVariable String id
+    ) {
+        return ResponseEntity.ok(
+            BaseResponse.<ProductDetailResponse>builder()
+                        .success(true)
+                        .message("Get the product detail with id : " + id + " successfully")
+                        .data(productService.getProductById(id))
+                        .fieldErros(null)
+                        .timeStamp(LocalDateTime.now())
+                        .build()
+        );
+    }
 
 }

@@ -1,6 +1,5 @@
 package org.example.vti_ecommerce_product_service.services.impl;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,12 +7,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.example.vti_ecommerce_product_service.dtos.requests.ProductFilterRequest;
-import org.example.vti_ecommerce_product_service.dtos.responses.BaseResponse;
 import org.example.vti_ecommerce_product_service.dtos.responses.PagedResponse;
+import org.example.vti_ecommerce_product_service.dtos.responses.ProductDetailResponse;
 import org.example.vti_ecommerce_product_service.dtos.responses.ProductSummaryResponse;
-import org.example.vti_ecommerce_product_service.entities.Product;
-import org.example.vti_ecommerce_product_service.entities.ProductVariant;
-import org.example.vti_ecommerce_product_service.mappers.ProductMapper;
+import org.example.vti_ecommerce_product_service.exceptions.ResourceNotFoundException;
+import org.example.vti_ecommerce_product_service.projections.ProductBaseProjection;
 import org.example.vti_ecommerce_product_service.projections.ProductSummaryProjection;
 import org.example.vti_ecommerce_product_service.repositories.ProductImageRepository;
 import org.example.vti_ecommerce_product_service.repositories.ProductRepository;
@@ -37,12 +35,12 @@ import lombok.extern.slf4j.Slf4j;
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
-    private final ProductMapper productMapper;
     private final ProductVariantRepository productVariantRepository;
     private final ProductImageRepository productImageRepository;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
     private static final Integer CACHE_TTL_SECONDS = 300;
+    private static final String PRODUCT_DETAIL_CACHE_PREFIX = "product:detail:";
 
     private static final List<String> VALID_SORT_OPTIONS = List.of("newest", "price_asc", "price_desc", "name_asc");
 
@@ -137,7 +135,72 @@ public class ProductServiceImpl implements ProductService {
             request.getMaxPrice(),
             request.getSortBy(),
             request.getPage(),
-            request.getSize()
-        );
+            request.getSize());
     }
+
+    @Override
+    public ProductDetailResponse getProductById(String id) {
+        String cacheKey = PRODUCT_DETAIL_CACHE_PREFIX + id;
+
+        try {
+            String cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached != null) {
+                return objectMapper.readValue(cached, ProductDetailResponse.class);
+            }
+        } catch (Exception e) {
+            log.warn("Redis read failed, fallback to DB. Key: {}, Error: {}", cacheKey, e.getMessage());
+        }
+
+        ProductBaseProjection product = productRepository.findProductBaseById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+
+        List<ProductDetailResponse.VariantResponse> variants = productVariantRepository
+                .findVariantsByProductId(id)
+                .stream()
+                .map(v -> ProductDetailResponse.VariantResponse.builder()
+                        .variantId(v.getVariantId())
+                        .sku(v.getSku())
+                        .price(v.getPrice())
+                        .color(v.getColor())
+                        .size(v.getSize())
+                        .weight(v.getWeight())
+                        .isActive(v.getVariantIsActive())
+                        .build())
+                .collect(Collectors.toList());
+
+        List<ProductDetailResponse.ImageResponse> images = productImageRepository
+                .findImagesByProductId(id)
+                .stream()
+                .map(i -> ProductDetailResponse.ImageResponse.builder()
+                        .imageId(i.getImageId())
+                        .variantId(i.getVariantId())
+                        .url(i.getImageUrl())
+                        .altText(i.getAltText())
+                        .sortOrder(i.getSortOrder())
+                        .isPrimary(i.getIsPrimary())
+                        .build())
+                .collect(Collectors.toList());
+
+        ProductDetailResponse response = ProductDetailResponse.builder()
+                .id(product.getId())
+                .categoryId(product.getCategoryId())
+                .name(product.getName())
+                .slug(product.getSlug())
+                .description(product.getDescription())
+                .isActive(product.getIsActive())
+                .variants(variants)
+                .images(images)
+                .build();
+
+        try {
+            String json = objectMapper.writeValueAsString(response);
+            redisTemplate.opsForValue().set(cacheKey, json, CACHE_TTL_SECONDS, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.warn("Redis write failed. Key: {}, Error: {}", cacheKey, e.getMessage());
+        }
+
+        return response;
+    }
+
+
 }
