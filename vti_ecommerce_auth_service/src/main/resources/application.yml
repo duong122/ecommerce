@@ -7,11 +7,12 @@ spring:
     name: auth-service
 
 keycloak:
-  auth-server-url: http://localhost:8181
+  server-url: http://localhost:8181
   realm: ecommerce-project
-  resource: backend
+  client-id: backend
   credentials:
     secret: 'kk4iyY7jcYexwxf3YddNZYGhHrMm8WM2'
-
+  token-uri: ${keycloak.server-url}/realms/ecommerce-project/protocol/openid-connect/token
+  admin-uri: ${server-url}/admin/realms/${keycloak.realm}
 
 

@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: product-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/product_service?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456  
+  java:
+    show-sql: true
+
+
+
+logging:
+  level: 
+    org:
+      hibernate: 
+        SQL: DEBUG
+        ORM: 
+          JDBC:
+            bind: TRACE
+
