@@ -36,4 +36,6 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
         AND pv.is_active = true
     """, nativeQuery = true)
     List<ProductVariantProjection> findVariantsByProductId(@Param("productId") String productId);
+
+    Boolean existsBySkuAndDeletedAtIsNull(String sku);
 }

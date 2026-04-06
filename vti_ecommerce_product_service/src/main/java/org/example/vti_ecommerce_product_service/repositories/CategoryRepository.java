@@ -6,6 +6,7 @@ import org.example.vti_ecommerce_product_service.entities.Category;
 import org.example.vti_ecommerce_product_service.projections.CategoryProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -26,4 +27,6 @@ public interface CategoryRepository extends JpaRepository<Category, String>  {
     ORDER BY c.sort_order ASC
     """, nativeQuery = true)
     List<CategoryProjection> findAllActiveCategories();
+
+    Boolean existsActiveById(@Param("id") String id);
 }

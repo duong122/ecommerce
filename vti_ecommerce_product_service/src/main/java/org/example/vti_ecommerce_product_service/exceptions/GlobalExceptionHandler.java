@@ -61,4 +61,16 @@ public class GlobalExceptionHandler {
                 .build()   
         );
     }
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<BaseResponse<Void>> handleDuplicate(DuplicateResourceException ex) {
+        return ResponseEntity.badRequest().body(
+                BaseResponse.<Void>builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .data(null)
+                        .fieldErros(null)
+                        .timeStamp(LocalDateTime.now())
+                        .build());
+    }
 }
