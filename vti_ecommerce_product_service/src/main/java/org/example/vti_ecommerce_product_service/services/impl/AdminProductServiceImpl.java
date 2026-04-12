@@ -9,19 +9,23 @@ import java.util.stream.Collectors;
 
 import org.example.vti_ecommerce_product_service.dtos.requests.CreateProductRequest;
 import org.example.vti_ecommerce_product_service.dtos.requests.CreateVariantRequest;
+import org.example.vti_ecommerce_product_service.dtos.requests.UpdateProductRequest;
 import org.example.vti_ecommerce_product_service.dtos.responses.ProductDetailResponse;
 import org.example.vti_ecommerce_product_service.entities.Product;
 import org.example.vti_ecommerce_product_service.entities.ProductImage;
 import org.example.vti_ecommerce_product_service.entities.ProductVariant;
 import org.example.vti_ecommerce_product_service.exceptions.DuplicateResourceException;
 import org.example.vti_ecommerce_product_service.exceptions.ResourceNotFoundException;
+import org.example.vti_ecommerce_product_service.mappers.ProductMapper;
 import org.example.vti_ecommerce_product_service.repositories.CategoryRepository;
 import org.example.vti_ecommerce_product_service.repositories.ProductImageRepository;
 import org.example.vti_ecommerce_product_service.repositories.ProductRepository;
 import org.example.vti_ecommerce_product_service.repositories.ProductVariantRepository;
 import org.example.vti_ecommerce_product_service.services.AdminProductService;
 import org.example.vti_ecommerce_product_service.utils.SlugUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 
@@ -39,7 +43,19 @@ public class AdminProductServiceImpl implements AdminProductService {
     private final ProductImageRepository productImageRepository;
     private final CategoryRepository categoryRepository;
     private final RedisTemplate<String, String> redisTemplate;
+    private final ProductMapper productMapper;
+
     private static final String PRODUCT_LIST_CACHE_PREFIX = "products:list:";
+    private static final String PRODUCT_CACHE_PREFIX = "product:";
+    private static final String PRODUCT_SLUG_CACHE_PREFIX = "product:slug:";
+
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    @Value("${kafka.topics.product-created}")
+    private String productCreatedTopic;
+
+    @Value("${kafka.topics.product-updated}")
+    private String productUpdatedTopic;
 
     @Override
     @Transactional
@@ -175,10 +191,72 @@ public class AdminProductServiceImpl implements AdminProductService {
 
     private void publishProductCreatedEvent(Product product) {
         try {
-            // Kafka producer sẽ implement ở bước sau khi setup Kafka
-            log.info("TODO: publish product.created event for productId: {}", product.getId());
+            kafkaTemplate.send(productCreatedTopic, product.getId(), productMapper.toCreatedEvent(product));
         } catch (Exception e) {
-            log.warn("Failed to publish product.created event: {}", e.getMessage());
+            log.warn("Failed to publish product.created event for productId: {}. Error: {}",
+                    product.getId(), e.getMessage());
         }
     }
+
+    @Override
+    @Transactional
+    public ProductDetailResponse updateProduct(String id, UpdateProductRequest request) {
+
+        Product product = productRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+
+        if (request.getCategoryId() != null) {
+            if (!categoryRepository.existsActiveById(request.getCategoryId())) {
+                throw new ResourceNotFoundException("Category not found with id: " + request.getCategoryId());
+            }
+        }
+
+        if (request.getName() != null && !request.getName().equals(product.getName())) {
+            if (productRepository.existsByNameAndDeletedAtIsNullAndIdNot(request.getName(), id)) {
+                throw new DuplicateResourceException("Product name already exists: " + request.getName());
+            }
+        }
+
+        String oldSlug = product.getSlug();
+
+        if (request.getName() != null && !request.getName().equals(product.getName())) {
+            String newSlug = generateUniqueSlug(request.getName());
+            product.setSlug(newSlug);
+        }
+
+        productMapper.updateProductFromRequest(request, product);
+
+        Product savedProduct = productRepository.save(product);
+
+        invalidateProductCache(savedProduct.getId(), oldSlug, savedProduct.getSlug());
+
+        publishProductUpdatedEvent(savedProduct);
+
+        return productMapper.toDetailResponse(savedProduct);
+    }
+
+
+    private void invalidateProductCache(String productId, String oldSlug, String newSlug) {
+        try {
+            redisTemplate.delete(PRODUCT_CACHE_PREFIX + productId);
+            redisTemplate.delete(PRODUCT_SLUG_CACHE_PREFIX + oldSlug);
+            if (!oldSlug.equals(newSlug)) {
+                redisTemplate.delete(PRODUCT_SLUG_CACHE_PREFIX + newSlug);
+            }
+            invalidateProductListCache();
+            log.info("Cache invalidated for product: {}", productId);
+        } catch (Exception e) {
+            log.warn("Failed to invalidate product cache for id: {}. Error: {}", productId, e.getMessage());
+        }
+    }
+
+    private void publishProductUpdatedEvent(Product product) {
+        try {
+            kafkaTemplate.send(productUpdatedTopic, product.getId(), productMapper.toUpdatedEvent(product));
+        } catch (Exception e) {
+            log.warn("Failed to publish product.updated event for productId: {}. Error: {}",
+                    product.getId(), e.getMessage());
+        }
+    }
+
 }

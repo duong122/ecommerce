@@ -77,4 +77,8 @@ public interface ProductRepository extends JpaRepository<Product, String>, JpaSp
     Boolean existsByNameAndDeletedAtIsNull(String name);
 
     Boolean existsBySlugAndDeletedAtIsNull(String slug);
+
+    Boolean existsByNameAndDeletedAtIsNullAndIdNot(String name, String id);
+
+    Optional<Product> findByIdAndDeletedAtIsNull(String id);
 }
