@@ -28,9 +28,11 @@ public interface ProductMapper {
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateProductFromRequest(UpdateProductRequest request, @MappingTarget Product product);
 
+    @Mapping(source = "id", target = "productId")
     @Mapping(source = "createdDate", target = "createdAt")
     ProductCreatedEvent toCreatedEvent(Product product);
 
+    @Mapping(source = "id", target = "productId")
     @Mapping(source = "lastModifiedDate", target = "updatedAt")
     ProductUpdatedEvent toUpdatedEvent(Product product);
 }
