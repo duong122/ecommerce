@@ -1,10 +1,12 @@
 package org.example.vti_ecommerce_product_service.services.impl;
 
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
 
 import org.example.vti_ecommerce_product_service.dtos.requests.ProductFilterRequest;
 import org.example.vti_ecommerce_product_service.dtos.responses.PagedResponse;
@@ -13,6 +15,7 @@ import org.example.vti_ecommerce_product_service.dtos.responses.ProductSummaryRe
 import org.example.vti_ecommerce_product_service.exceptions.ResourceNotFoundException;
 import org.example.vti_ecommerce_product_service.projections.ProductBaseProjection;
 import org.example.vti_ecommerce_product_service.projections.ProductSummaryProjection;
+import org.example.vti_ecommerce_product_service.repositories.CategoryRepository;
 import org.example.vti_ecommerce_product_service.repositories.ProductImageRepository;
 import org.example.vti_ecommerce_product_service.repositories.ProductRepository;
 import org.example.vti_ecommerce_product_service.repositories.ProductVariantRepository;
@@ -37,10 +40,12 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final ProductVariantRepository productVariantRepository;
     private final ProductImageRepository productImageRepository;
+    private final CategoryRepository categoryRepository;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
     private static final Integer CACHE_TTL_SECONDS = 300;
     private static final String PRODUCT_DETAIL_CACHE_PREFIX = "product:detail:";
+    private static final String PRODUCT_LIST_CACHE_PREFIX = "products:list:";
 
     private static final List<String> VALID_SORT_OPTIONS = List.of("newest", "price_asc", "price_desc", "name_asc");
 
@@ -201,6 +206,5 @@ public class ProductServiceImpl implements ProductService {
 
         return response;
     }
-
-
+    
 }

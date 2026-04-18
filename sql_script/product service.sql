@@ -4,6 +4,7 @@ COLLATE utf8mb4_unicode_ci;
 
 USE product_service;
 
+-- Bảng này có thể xóa decription field
 CREATE TABLE categories (
     id VARCHAR(36) PRIMARY KEY ,
     name VARCHAR(255) NOT NULL,
@@ -27,7 +28,7 @@ CREATE TABLE categories (
 ) ENGINE=InnoDB;
 
 CREATE TABLE products (
-    id VARCHAR(36) PRIMARY KEY ,
+    id VARCHAR(36) PRIMARY KEY,
     category_id VARCHAR(36) NOT NULL,
     name VARCHAR(500) NOT NULL,
     slug VARCHAR(500) NOT NULL UNIQUE,
@@ -75,7 +76,7 @@ CREATE TABLE product_images (
     id VARCHAR(36) PRIMARY KEY ,
     product_id VARCHAR(36) NOT NULL,
     variant_id VARCHAR(36) NULL COMMENT 'NULL nếu là ảnh chung của product',
-    url VARCHAR(500) NOT NULL,
+    url VARCHAR(500) NOT NULL,	
     alt_text VARCHAR(255),
     sort_order INT DEFAULT 0,
     is_primary BOOLEAN DEFAULT FALSE COMMENT 'Ảnh đại diện chính',

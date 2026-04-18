@@ -7,7 +7,19 @@ spring:
     password: 123456  
   java:
     show-sql: true
-
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8181/realms/ecommerce-project
 
 
 logging:
@@ -19,3 +31,9 @@ logging:
           JDBC:
             bind: TRACE
 
+
+kafka:
+  topics:
+    product-created: product.created
+    product-updated: product.updated
+    category-created: category.created

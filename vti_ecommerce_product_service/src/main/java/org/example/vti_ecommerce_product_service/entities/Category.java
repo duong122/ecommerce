@@ -30,8 +30,8 @@ public class Category extends BaseEntity {
     @Column(name = "parent_id")
     private String parentId;
 
-    @Column(name = "img_url")
-    private String imgUrl;
+    @Column(name = "image_url")
+    private String imageUrl;
 
     @Column(name = "sort_order")
     private Integer sortOrder;

@@ -1,7 +1,6 @@
 package org.example.vti_ecommerce_product_service.repositories;
 
 
-import java.util.List;
 import java.util.Optional;
 
 import org.example.vti_ecommerce_product_service.entities.Product;
@@ -73,5 +72,13 @@ public interface ProductRepository extends JpaRepository<Product, String>, JpaSp
         AND p.is_active = true
     """, nativeQuery = true)
     Optional<ProductBaseProjection> findProductBaseById(@Param("id") String id);
+    
 
+    Boolean existsByNameAndDeletedAtIsNull(String name);
+
+    Boolean existsBySlugAndDeletedAtIsNull(String slug);
+
+    Boolean existsByNameAndDeletedAtIsNullAndIdNot(String name, String id);
+
+    Optional<Product> findByIdAndDeletedAtIsNull(String id);
 }
