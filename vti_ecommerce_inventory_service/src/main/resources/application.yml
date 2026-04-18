@@ -1,0 +1,53 @@
+server:
+  port: 8182
+
+spring:
+  application:
+    name: inventory-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/inventory_service?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8181/realms/ecommerce-project
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+kafka:
+  topics:
+    inventory-reserved: inventory.reserved
+    inventory-released: inventory.released
+    inventory-confirmed: inventory.confirmed
+
+inventory:
+  cache:
+    availability-ttl-seconds: 10
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: DEBUG
+
+
