@@ -27,10 +27,8 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Internal endpoints — bypass JWT, validate bằng header ở service layer
                 .requestMatchers("/api/v1/internal/**").permitAll()
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                // Admin endpoints
                 .requestMatchers("/api/v1/admin/**").authenticated()
                 .anyRequest().authenticated()
             )

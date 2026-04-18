@@ -28,7 +28,6 @@ public class InventoryServiceImpl implements InventoryService {
     @Value("${inventory.cache.availability-ttl-seconds}")
     private long availabilityTtlSeconds;
 
-    // Api này không cần redis cache commit sau phải loại bỏ redis khỏi api
     @Override
     public CheckAvailabilityResponse checkAvailability(CheckAvailabilityRequest request) {
 
@@ -36,9 +35,7 @@ public class InventoryServiceImpl implements InventoryService {
                 .map(CheckAvailabilityRequest.AvailabilityItem::getVariantId)
                 .toList();
 
-        // Bulk query DB một lần duy nhất — tận dụng index idx_variant_id
-        List<Object[]> dbResults = inventoryRepository
-                .findAvailableQuantitiesByVariantIds(variantIds);
+        List<Object[]> dbResults = inventoryRepository.findAvailableQuantitiesByVariantIds(variantIds);
 
         // Build map variantId -> availableQuantity từ kết quả DB
         Map<String, Integer> availabilityMap = new HashMap<>();
