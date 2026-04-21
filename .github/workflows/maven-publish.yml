@@ -70,31 +70,31 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    name: Deploy to VPS
-    runs-on: ubuntu-latest
-    needs: build 
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  # deploy:
+  #   name: Deploy to VPS
+  #   runs-on: ubuntu-latest
+  #   needs: build 
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
-    environment:
-      name: production
+  #   environment:
+  #     name: production
 
-    steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.DEPLOY_SERVER_IP }}
-          username: ${{ secrets.DEPLOY_SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
-            docker pull ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
-            docker stop vti_ecommerce_product_service || true
-            docker rm vti_ecommerce_product_service || true
-            docker run -d \
-              --name vti_ecommerce_product_service \
-              --network ecommerce-network \
-              -p 8080:8080 \
-              -e SPRING_PROFILES_ACTIVE=prod \
-              ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
-            docker image prune -f
+  #   steps:
+  #     - name: Deploy via SSH
+  #       uses: appleboy/ssh-action@v1
+  #       with:
+  #         host: ${{ secrets.DEPLOY_SERVER_IP }}
+  #         username: ${{ secrets.DEPLOY_SERVER_USER }}
+  #         key: ${{ secrets.SSH_PRIVATE_KEY }}
+  #         script: |
+  #           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+  #           docker pull ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+  #           docker stop vti_ecommerce_product_service || true
+  #           docker rm vti_ecommerce_product_service || true
+  #           docker run -d \
+  #             --name vti_ecommerce_product_service \
+  #             --network ecommerce-network \
+  #             -p 8080:8080 \
+  #             -e SPRING_PROFILES_ACTIVE=prod \
+  #             ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+  #           docker image prune -f
