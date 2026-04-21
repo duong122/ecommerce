@@ -14,9 +14,17 @@ public interface InventoryRepository extends JpaRepository<Inventory, String> {
     @Query(value = """
         SELECT i.variant_id, SUM(i.available_quantity) AS available_quantity
         FROM inventories i
-        WHERE i.variant_id IN (:variantIds)
-            AND i.deleted_at IS NULL
-        GROUP BY i.variant_id
-        """, nativeQuery = true)
+                WHERE i.variant_id IN (:variantIds)
+                    AND i.deleted_at IS NULL
+                GROUP BY i.variant_id
+                """, nativeQuery = true)
     List<Object[]> findAvailableQuantitiesByVariantIds(@Param("variantIds") List<String> variantIds);
+
+    @Query(value = """
+            SELECT * FROM inventories
+            WHERE variant_id IN (:variantIds)
+              AND deleted_at IS NULL
+            FOR UPDATE
+            """, nativeQuery = true)
+    List<Inventory> findByVariantIdsForUpdate(@Param("variantIds") List<String> variantIds);
 }
