@@ -4,13 +4,13 @@ name: Product Service CI/CD
 on:
   push:
     paths:
-      - "product-service/**"
+      - "vti_ecommerce_product_service/**"
   pull_request:
     paths:
-      - "product-service/**"
+      - "vti_ecommerce_product_service/**"
 
 env:
-  DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/product-service
+  DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/vti_ecommerce_product_service
 
 jobs:
   test:
@@ -25,7 +25,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('product-service/pom.xml') }}
+          key: ${{ runner.os }}-maven-${{ hashFiles('vti_ecommerce_product_service/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
@@ -36,7 +36,7 @@ jobs:
           distribution: "temurin"
 
       - name: Run tests
-        working-directory: product-service
+        working-directory: vti_ecommerce_product_service
         run: mvn test -q
 
   build:
@@ -62,7 +62,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./product-service
+          context: ./vti_ecommerce_product_service
           push: true
           tags: |
             ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
@@ -89,10 +89,10 @@ jobs:
           script: |
             docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
             docker pull ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
-            docker stop product-service || true
-            docker rm product-service || true
+            docker stop vti_ecommerce_product_service || true
+            docker rm vti_ecommerce_product_service || true
             docker run -d \
-              --name product-service \
+              --name vti_ecommerce_product_service \
               --network ecommerce-network \
               -p 8080:8080 \
               -e SPRING_PROFILES_ACTIVE=prod \
