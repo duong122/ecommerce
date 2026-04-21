@@ -1,4 +1,3 @@
-version: '3.0'
 services:
   mysql:
     container_name: ecommerce-mysql
@@ -10,13 +9,23 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - keycloak-network
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   zookeeper:
     container_name: ecommerce-zookeeper
     image: wurstmeister/zookeeper
     ports:
       - "2181:2181"
+    volumes:
+      - zookeeper-data:/data
+    networks:
+      - ecommerce-network
 
   kafka:
     container_name: ecommerce-kafka
@@ -29,8 +38,12 @@ services:
       KAFKA_LISTENERS: INSIDE://:29092,OUTSIDE://:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+    volumes:
+      - kafka-data:/kafka
     depends_on:
       - zookeeper
+    networks:
+      - ecommerce-network
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -41,15 +54,21 @@ services:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    depends_on:
+      - kafka
+    networks:
+      - ecommerce-network
 
   redis:
     image: redis:7.0-alpine
-    container_name: ecommerce-handover-redis
+    container_name: ecommerce-redis
     ports:
       - "6379:6379"
     volumes:
       - redis-data:/data
     command: redis-server --appendonly yes
+    networks:
+      - ecommerce-network
 
   redis-insight:
     image: redislabs/redisinsight:2.64.1
@@ -60,6 +79,8 @@ services:
       - redis-insight-data:/data
     depends_on:
       - redis
+    networks:
+      - ecommerce-network
 
   keycloak:
     image: quay.io/keycloak/keycloak:22.0.5
@@ -74,80 +95,79 @@ services:
       KC_HOSTNAME: localhost
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: password
-
     command: start-dev
-
     ports:
       - "8181:8080"
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     networks:
-      - keycloak-network
-
-#  elasticsearch:
-#    container_name: ecommerce-elasticsearch
-#    image: elasticsearch:7.17.10
-#    ports:
-#      - "9200:9200"
-#      - "9300:9300"
-#    environment:
-#      - discovery.type=single-node
-#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-#      - bootstrap.memory_lock=true
-#      - xpack.security.enabled=false
-#    ulimits:
-#      memlock:
-#        soft: -1
-#        hard: -1
-#    networks:
-#      - optimize-network
-#  logstash:
-#    container_name: ecommerce-logstash
-#    image: logstash:7.17.10
-#    ports:
-#      - "5044:5044"
-#      - "5000:5000/tcp"
-#      - "5000:5000/udp"
-#    volumes:
-#      - ./logstash/config/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-#    environment:
-#      LS_JAVA_OPTS: "-Xms256m -Xmx256m"
-#    networks:
-#      - optimize-network
-#    depends_on:
-#      - elasticsearch
-#  kibana:
-#    container_name: ecommerce-kb-container
-#    image: kibana:7.17.10
-#    environment:
-#      - ELASTICSEARCH_HOSTS=http://ecommerce-elasticsearch:9200
-#    networks:
-#      - optimize-network
-#    depends_on:
-#      - elasticsearch
-#    ports:
-#      - "5601:5601"
-
+      - ecommerce-network
 
   product-service:
-    build: 
-      context: ./product-service
-      dockerfifle: Dockerfifle
-    port:
+    build:
+      context: ./vti_ecommerce_product_service
+      dockerfile: Dockerfile
+    ports:
       - "8082:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/product-service
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/product_service
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 123456
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: 9092
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     depends_on:
       mysql:
         condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - ecommerce-network
 
-
+  # elasticsearch:
+  #  container_name: ecommerce-elasticsearch
+  #  image: elasticsearch:7.17.10
+  #  ports:
+  #    - "9200:9200"
+  #    - "9300:9300"
+  #  environment:
+  #    - discovery.type=single-node
+  #    - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+  #    - bootstrap.memory_lock=true
+  #    - xpack.security.enabled=false
+  #  ulimits:
+  #    memlock:
+  #      soft: -1
+  #      hard: -1
+  #  networks:
+  #    - optimize-network
+  # logstash:
+  #  container_name: ecommerce-logstash
+  #  image: logstash:7.17.10
+  #  ports:
+  #    - "5044:5044"
+  #    - "5000:5000/tcp"
+  #    - "5000:5000/udp"
+  #  volumes:
+  #    - ./logstash/config/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+  #  environment:
+  #    LS_JAVA_OPTS: "-Xms256m -Xmx256m"
+  #  networks:
+  #    - optimize-network
+  #  depends_on:
+  #    - elasticsearch
+  # kibana:
+  #  container_name: ecommerce-kb-container
+  #  image: kibana:7.17.10
+  #  environment:
+  #    - ELASTICSEARCH_HOSTS=http://ecommerce-elasticsearch:9200
+  #  networks:
+  #    - optimize-network
+  #  depends_on:
+  #    - elasticsearch
+  #  ports:
+  #    - "5601:5601"
 
 volumes:
-  mongo-data:
   zookeeper-data:
   kafka-data:
   mysql_data:
@@ -155,8 +175,5 @@ volumes:
   redis-insight-data:
 
 networks:
-  keycloak-network:
-  optimize-network:
-
-
-
+  ecommerce-network:
+    driver: bridge
