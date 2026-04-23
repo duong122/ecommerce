@@ -3,13 +3,16 @@ package org.example.vti_ecommerce_inventory_service.services.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.vti_ecommerce_inventory_service.dtos.requests.CheckAvailabilityRequest;
+import org.example.vti_ecommerce_inventory_service.dtos.requests.ConfirmRequest;
 import org.example.vti_ecommerce_inventory_service.dtos.requests.ReleaseRequest;
 import org.example.vti_ecommerce_inventory_service.dtos.requests.ReserveRequest;
 import org.example.vti_ecommerce_inventory_service.dtos.responses.CheckAvailabilityResponse;
+import org.example.vti_ecommerce_inventory_service.dtos.responses.ConfirmResponse;
 import org.example.vti_ecommerce_inventory_service.dtos.responses.ReleaseResponse;
 import org.example.vti_ecommerce_inventory_service.dtos.responses.ReserveResponse;
 import org.example.vti_ecommerce_inventory_service.entities.Inventory;
 import org.example.vti_ecommerce_inventory_service.entities.InventoryTransaction;
+import org.example.vti_ecommerce_inventory_service.exceptions.InventoryConfirmException;
 import org.example.vti_ecommerce_inventory_service.exceptions.InventoryReleaseException;
 import org.example.vti_ecommerce_inventory_service.exceptions.InventoryReservationException;
 import org.example.vti_ecommerce_inventory_service.repositories.InventoryRepository;
@@ -170,7 +173,7 @@ public class InventoryServiceImpl implements InventoryService {
         Map<String, Integer> requestedQtyMap = request.getItems().stream()
                 .collect(Collectors.toMap(
                         ReleaseRequest.ReleaseItem::getVariantId,
-                        ReleaseRequest.ReleaseItem::getQuantity));  
+                        ReleaseRequest.ReleaseItem::getQuantity));
 
         List<Inventory> inventories = inventoryRepository.findByVariantIdsForUpdate(variantIds);
 
@@ -233,10 +236,92 @@ public class InventoryServiceImpl implements InventoryService {
                     .build());
         }
 
-
         transactionRepository.saveAll(transactions);
 
         return ReleaseResponse.builder()
+                .success(true)
+                .orderId(request.getOrderId())
+                .items(results)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public ConfirmResponse confirm(ConfirmRequest request) {
+
+        List<String> variantIds = request.getItems().stream()
+                .map(ConfirmRequest.ConfirmItem::getVariantId)
+                .toList();
+
+        Map<String, Integer> requestedQtyMap = request.getItems().stream()
+                .collect(Collectors.toMap(
+                        ConfirmRequest.ConfirmItem::getVariantId,
+                        ConfirmRequest.ConfirmItem::getQuantity));
+
+        List<Inventory> inventories = inventoryRepository.findByVariantIdsForUpdate(variantIds);
+
+        Map<String, Inventory> inventoryMap = inventories.stream()
+                .collect(Collectors.toMap(Inventory::getVariantId, inv -> inv));
+
+        List<ConfirmResponse.ConfirmItemResult> results = new ArrayList<>();
+        boolean allSuccess = true;
+
+        for (ConfirmRequest.ConfirmItem item : request.getItems()) {
+            Inventory inv = inventoryMap.get(item.getVariantId());
+
+            String failureReason = null;
+
+            if (inv == null) {
+                failureReason = "Variant not found";
+            } else if (inv.getReservedQuantity() < item.getQuantity()) {
+                failureReason = "Confirm quantity exceeds reserved quantity. Reserved: "
+                        + inv.getReservedQuantity() + ", requested: " + item.getQuantity();
+            }
+
+            if (failureReason != null) {
+                allSuccess = false;
+                results.add(ConfirmResponse.ConfirmItemResult.builder()
+                        .variantId(item.getVariantId())
+                        .requestedQuantity(item.getQuantity())
+                        .success(false)
+                        .failureReason(failureReason)
+                        .build());
+            } else {
+                results.add(ConfirmResponse.ConfirmItemResult.builder()
+                        .variantId(item.getVariantId())
+                        .requestedQuantity(item.getQuantity())
+                        .success(true)
+                        .build());
+            }
+        }
+
+        if (!allSuccess) {
+            throw new InventoryConfirmException("Confirm failed for some items", results);
+        }
+
+        List<InventoryTransaction> transactions = new ArrayList<>();
+
+        for (Inventory inv : inventories) {
+            Integer qty = requestedQtyMap.get(inv.getVariantId());
+
+            inv.setTotalQuantity(inv.getTotalQuantity() - qty);
+            inv.setReservedQuantity(inv.getReservedQuantity() - qty);
+
+            transactions.add(InventoryTransaction.builder()
+                    .inventoryId(inv.getId())
+                    .variantId(inv.getVariantId())
+                    .warehouseId(inv.getWarehouseId())
+                    .transactionType(InventoryTransaction.TransactionType.export)
+                    .quantity(qty)
+                    .referenceType(InventoryTransaction.ReferenceType.order)
+                    .referenceId(request.getOrderId())
+                    .note("Confirmed export for order " + request.getOrderId())
+                    .build());
+        }
+
+        transactionRepository.saveAll(transactions);
+
+        return ConfirmResponse.builder()
                 .success(true)
                 .orderId(request.getOrderId())
                 .items(results)

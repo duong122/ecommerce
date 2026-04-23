@@ -3,6 +3,7 @@ package org.example.vti_ecommerce_inventory_service.exceptions;
 import java.time.LocalDateTime;
 
 import org.example.vti_ecommerce_inventory_service.dtos.responses.BaseResponse;
+import org.example.vti_ecommerce_inventory_service.dtos.responses.ConfirmResponse;
 import org.example.vti_ecommerce_inventory_service.dtos.responses.ReleaseResponse;
 import org.example.vti_ecommerce_inventory_service.dtos.responses.ReserveResponse;
 import org.springframework.http.HttpStatus;
@@ -13,35 +14,51 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(InventoryReservationException.class)
-    public ResponseEntity<BaseResponse<ReserveResponse>> handleReservationException(
-            InventoryReservationException ex) {
+        @ExceptionHandler(InventoryReservationException.class)
+        public ResponseEntity<BaseResponse<ReserveResponse>> handleReservationException(
+                        InventoryReservationException ex) {
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                BaseResponse.<ReserveResponse>builder()
-                        .success(false)
-                        .message(ex.getMessage())
-                        .data(ReserveResponse.builder()
-                                .success(false)
-                                .items(ex.getItemResults())
-                                .build())
-                        .timeStamp(LocalDateTime.now())
-                        .build());
-    }
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                                BaseResponse.<ReserveResponse>builder()
+                                                .success(false)
+                                                .message(ex.getMessage())
+                                                .data(ReserveResponse.builder()
+                                                                .success(false)
+                                                                .items(ex.getItemResults())
+                                                                .build())
+                                                .timeStamp(LocalDateTime.now())
+                                                .build());
+        }
 
-    @ExceptionHandler(InventoryReleaseException.class)
-    public ResponseEntity<BaseResponse<ReleaseResponse>> handleReleaseException(
-            InventoryReleaseException ex) {
+        @ExceptionHandler(InventoryReleaseException.class)
+        public ResponseEntity<BaseResponse<ReleaseResponse>> handleReleaseException(
+                        InventoryReleaseException ex) {
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                BaseResponse.<ReleaseResponse>builder()
-                        .success(false)
-                        .message(ex.getMessage())
-                        .data(ReleaseResponse.builder()
-                                .success(false)
-                                .items(ex.getItemResults())
-                                .build())
-                        .timeStamp(LocalDateTime.now())
-                        .build());
-    }
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                                BaseResponse.<ReleaseResponse>builder()
+                                                .success(false)
+                                                .message(ex.getMessage())
+                                                .data(ReleaseResponse.builder()
+                                                                .success(false)
+                                                                .items(ex.getItemResults())
+                                                                .build())
+                                                .timeStamp(LocalDateTime.now())
+                                                .build());
+        }
+
+        @ExceptionHandler(InventoryConfirmException.class)
+        public ResponseEntity<BaseResponse<ConfirmResponse>> handleConfirmException(
+                        InventoryConfirmException ex) {
+
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                                BaseResponse.<ConfirmResponse>builder()
+                                                .success(false)
+                                                .message(ex.getMessage())
+                                                .data(ConfirmResponse.builder()
+                                                                .success(false)
+                                                                .items(ex.getItemResults())
+                                                                .build())
+                                                .timeStamp(LocalDateTime.now())
+                                                .build());
+        }
 }

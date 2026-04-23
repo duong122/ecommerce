@@ -3,10 +3,12 @@ package org.example.vti_ecommerce_inventory_service.controllers;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.vti_ecommerce_inventory_service.dtos.requests.CheckAvailabilityRequest;
+import org.example.vti_ecommerce_inventory_service.dtos.requests.ConfirmRequest;
 import org.example.vti_ecommerce_inventory_service.dtos.requests.ReleaseRequest;
 import org.example.vti_ecommerce_inventory_service.dtos.requests.ReserveRequest;
 import org.example.vti_ecommerce_inventory_service.dtos.responses.BaseResponse;
 import org.example.vti_ecommerce_inventory_service.dtos.responses.CheckAvailabilityResponse;
+import org.example.vti_ecommerce_inventory_service.dtos.responses.ConfirmResponse;
 import org.example.vti_ecommerce_inventory_service.dtos.responses.ReleaseResponse;
 import org.example.vti_ecommerce_inventory_service.dtos.responses.ReserveResponse;
 import org.example.vti_ecommerce_inventory_service.services.InventoryService;
@@ -97,6 +99,29 @@ public class InternalInventoryController {
                                 BaseResponse.<ReleaseResponse>builder()
                                                 .success(true)
                                                 .message("Stock released successfully")
+                                                .data(data)
+                                                .timeStamp(LocalDateTime.now())
+                                                .build());
+        }
+
+        @PostMapping("/confirm")
+        public ResponseEntity<BaseResponse<ConfirmResponse>> confirm(
+                        @RequestHeader(INTERNAL_SERVICE_HEADER) String internalHeader,
+                        @Valid @RequestBody ConfirmRequest request) {
+
+                if (!"true".equals(internalHeader)) {
+                        return ResponseEntity.status(403).body(
+                                        BaseResponse.<ConfirmResponse>builder()
+                                                        .success(false)
+                                                        .message("Access denied: internal service only")
+                                                        .timeStamp(LocalDateTime.now())
+                                                        .build());
+                }
+                ConfirmResponse data = inventoryService.confirm(request);
+                return ResponseEntity.ok(
+                                BaseResponse.<ConfirmResponse>builder()
+                                                .success(true)
+                                                .message("Stock confirmed successfully")
                                                 .data(data)
                                                 .timeStamp(LocalDateTime.now())
                                                 .build());
