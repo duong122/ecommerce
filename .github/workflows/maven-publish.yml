@@ -1,6 +1,5 @@
 name: Product Service CI/CD
 
-
 on:
   push:
     paths:
@@ -16,6 +15,30 @@ jobs:
   test:
     name: Run Unit Tests
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: product_service
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - name: Checkout code
@@ -37,15 +60,19 @@ jobs:
 
       - name: Run tests
         working-directory: vti_ecommerce_product_service
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/product_service?useSSL=false&allowPublicKeyRetrieval=true
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: root
+          SPRING_DATA_REDIS_HOST: localhost
+          SPRING_DATA_REDIS_PORT: 6379
         run: mvn test -q
 
   build:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
-    needs: test  
-
+    needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -69,6 +96,7 @@ jobs:
             ${{ env.DOCKER_IMAGE }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
 
   # deploy:
   #   name: Deploy to VPS
