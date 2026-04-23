@@ -14,12 +14,14 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         spring.json.add.type.headers: false
-    
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:8181/realms/ecommerce-project
+  jpa:
+    hibernate:
+      ddl-auto: update
 
 
 logging:
